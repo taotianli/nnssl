@@ -112,6 +112,8 @@ ENV/
 *.jpeg
 *.csv
 *.ipynb
+!notebooks/
+!notebooks/*.ipynb
 
 *.model
 

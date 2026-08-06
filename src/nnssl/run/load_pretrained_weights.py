@@ -29,6 +29,25 @@ def load_pretrained_weights(network, fname, verbose=False):
     if isinstance(mod, OptimizedModule):
         mod = mod._orig_mod
 
+    # Extension protocol for networks that add new branches to an existing
+    # pretrained architecture. PrimusMAEJEPA uses this to load the released MAE
+    # weights, then initializes its EMA target from the loaded online encoder.
+    if hasattr(mod, "load_mae_state_dict"):
+        loaded = mod.load_mae_state_dict(pretrained_dict)
+        if not loaded:
+            raise RuntimeError(f"No compatible MAE parameters found in {fname}")
+        print(
+            "################### Loaded",
+            len(loaded),
+            "MAE tensors and synchronized the JEPA target encoder from",
+            fname,
+            "###################",
+        )
+        if verbose:
+            print("Loaded MAE keys:")
+            print("\n".join(loaded))
+        return
+
     model_dict = mod.state_dict()
     # verify that all but the segmentation layers have the same shape
     for key, _ in model_dict.items():
