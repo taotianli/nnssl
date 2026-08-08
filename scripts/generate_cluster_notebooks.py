@@ -275,6 +275,11 @@ write(
             qc_ids = rng.choice(common_ids, size=4, replace=False)
 
             def load_b2nd(path):
+                path = Path(path)
+                if path.suffix != ".b2nd":
+                    path = Path(f"{path}.b2nd")
+                if not path.is_file():
+                    raise FileNotFoundError(f"Preprocessed volume not found: {path}")
                 return np.asarray(blosc2.open(urlpath=str(path), mode="r", mmap_mode="r"))
 
             def middle_planes(volume):
