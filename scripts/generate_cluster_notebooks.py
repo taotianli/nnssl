@@ -249,7 +249,7 @@ write(
             if RUN_PREPROCESSING or not valid_path.is_file():
                 preprocess_dataset(
                     DATASET_ID, plans_identifier=PLANS, configurations=(CONFIGURATION,),
-                    num_processes=(NUM_PROCESSES_PREPROCESS,), verbose=False,
+                    num_processes=[NUM_PROCESSES_PREPROCESS], verbose=False,
                 )
 
             valid_images = json.loads(valid_path.read_text())
