@@ -196,6 +196,84 @@ def validate_inputs(
     }
 
 
+def install_uploaded_downstream_compatibility() -> list[str]:
+    """Bridge known format differences in the released downstream data.
+
+    The uploaded preprocessing properties store foreground coordinates as
+    ``(z, y, x)`` while this nnU-Net fork expects ``(class, z, y, x)``. Some
+    datasets (notably TopCoW) also retain sparse source label IDs. The latter
+    must be made contiguous for loss computation and restored for exporting
+    segmentations in the source label space.
+    """
+    import numpy as np
+    import torch
+    from nnunetv2.training.dataloading.data_loader import nnUNetDataLoader
+    from nnunetv2.utilities.label_handling.label_handling import LabelManager
+
+    installed: list[str] = []
+    if not getattr(nnUNetDataLoader, "_openmind_uploaded_data_compat", False):
+        original_get_bbox = nnUNetDataLoader.get_bbox
+        original_generate_train_batch = nnUNetDataLoader.generate_train_batch
+
+        def compatible_get_bbox(self, data_shape, force_fg, class_locations, *args, **kwargs):
+            if class_locations is not None:
+                normalized = {}
+                spatial_dims = len(data_shape)
+                for key, locations in class_locations.items():
+                    array = np.asarray(locations)
+                    if array.ndim == 2 and array.shape[1] == spatial_dims:
+                        class_column = np.zeros((len(array), 1), dtype=array.dtype)
+                        array = np.concatenate((class_column, array), axis=1)
+                    normalized[key] = array
+                class_locations = normalized
+            return original_get_bbox(
+                self, data_shape, force_fg, class_locations, *args, **kwargs
+            )
+
+        def remap_target(target, mapping):
+            if isinstance(target, list):
+                return [remap_target(item, mapping) for item in target]
+            source = target.clone() if torch.is_tensor(target) else target.copy()
+            for source_label, train_id in mapping.items():
+                target[source == source_label] = train_id
+            return target
+
+        def compatible_generate_train_batch(self):
+            batch = original_generate_train_batch(self)
+            labels = list(self.annotated_classes_key[1:])
+            mapping = {
+                int(label): train_id
+                for train_id, label in enumerate(labels)
+                if isinstance(label, (int, np.integer)) and int(label) != train_id
+            }
+            if mapping:
+                batch["target"] = remap_target(batch["target"], mapping)
+            return batch
+
+        nnUNetDataLoader.get_bbox = compatible_get_bbox
+        nnUNetDataLoader.generate_train_batch = compatible_generate_train_batch
+        nnUNetDataLoader._openmind_uploaded_data_compat = True
+        installed.append("foreground coordinates (z,y,x) -> (class,z,y,x)")
+        installed.append("sparse source labels -> contiguous training labels")
+
+    if not getattr(LabelManager, "_openmind_sparse_export_compat", False):
+        original_convert = LabelManager.convert_probabilities_to_segmentation
+
+        def compatible_convert(self, predicted_probabilities):
+            segmentation = original_convert(self, predicted_probabilities)
+            labels = list(self.all_labels)
+            if not self.has_regions and labels != list(range(len(labels))):
+                source = segmentation.clone() if torch.is_tensor(segmentation) else segmentation.copy()
+                for train_id, source_label in enumerate(labels):
+                    segmentation[source == train_id] = source_label
+            return segmentation
+
+        LabelManager.convert_probabilities_to_segmentation = compatible_convert
+        LabelManager._openmind_sparse_export_compat = True
+        installed.append("contiguous predictions -> sparse source labels")
+    return installed
+
+
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(
         description="Train and full-volume validate one public Primus-M OpenMind checkpoint on one downstream dataset."
@@ -309,6 +387,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA is required (use --dry-run for a CPU-only preflight)")
+    compatibility = install_uploaded_downstream_compatibility()
+    if compatibility:
+        print("Installed uploaded downstream compatibility:")
+        for item in compatibility:
+            print(f"  - {item}")
     trainer = get_trainer_from_args(
         dataset_dir.name,
         args.configuration,

@@ -87,6 +87,13 @@ are isolated by model, dataset, and fold. The two most useful files are:
 `benchmark_run.json` additionally records the resolved checkpoint, dataset,
 protocol, GPU, status, runtime, foreground mean metrics, and exact output path.
 
+The runner installs process-local compatibility adapters for the uploaded
+downstream preprocessing artifacts. They accept foreground locations stored as
+`(z, y, x)` even though the adaptation fork expects `(class, z, y, x)`. They
+also map sparse source labels such as those in TopCoW to contiguous training
+channels and restore the original label IDs when exporting full volumes. No
+`.b2nd`, properties, source plans, or ground-truth files are rewritten.
+
 Epoch count is implemented by the trainer class in the adaptation repository;
 it is not stored in the Hugging Face `adaptation_plan.json`. That JSON describes
 the pretrained architecture, input preprocessing, patch size, and weight-key

@@ -1,6 +1,8 @@
 import importlib.util
 import json
+import sys
 import tempfile
+import types
 import unittest
 from pathlib import Path
 
@@ -135,6 +137,66 @@ class BenchmarkHelpersTest(unittest.TestCase):
             generated = dataset / "OMBench_PrimusM_OpenMind_MAE.json"
             self.assertTrue(generated.is_file())
             self.assertEqual(json.loads(generated.read_text())["plans_name"], generated.stem)
+
+    def test_compatibility_accepts_three_column_class_locations(self):
+        try:
+            import numpy as np
+            import torch
+        except ImportError:
+            self.skipTest("numpy and torch are required for the compatibility hook test")
+
+        class FakeLoader:
+            annotated_classes_key = (-1, 0, 2, 5)
+
+            def get_bbox(self, data_shape, force_fg, class_locations, *args, **kwargs):
+                return class_locations
+
+            def generate_train_batch(self):
+                return {"target": torch.tensor([[[[0, 2, 5]]]])}
+
+        class FakeLabelManager:
+            has_regions = False
+            all_labels = [0, 2, 5]
+
+            def convert_probabilities_to_segmentation(self, predicted_probabilities):
+                return predicted_probabilities.argmax(0)
+
+        loader_module = types.ModuleType("nnunetv2.training.dataloading.data_loader")
+        loader_module.nnUNetDataLoader = FakeLoader
+        label_module = types.ModuleType("nnunetv2.utilities.label_handling.label_handling")
+        label_module.LabelManager = FakeLabelManager
+        names = {
+            "nnunetv2": types.ModuleType("nnunetv2"),
+            "nnunetv2.training": types.ModuleType("nnunetv2.training"),
+            "nnunetv2.training.dataloading": types.ModuleType("nnunetv2.training.dataloading"),
+            "nnunetv2.training.dataloading.data_loader": loader_module,
+            "nnunetv2.utilities": types.ModuleType("nnunetv2.utilities"),
+            "nnunetv2.utilities.label_handling": types.ModuleType("nnunetv2.utilities.label_handling"),
+            "nnunetv2.utilities.label_handling.label_handling": label_module,
+        }
+        previous = {name: sys.modules.get(name) for name in names}
+        try:
+            sys.modules.update(names)
+            installed = MODULE.install_uploaded_downstream_compatibility()
+            locations = FakeLoader().get_bbox(
+                (32, 32, 32), True, {1: np.asarray([[4, 5, 6]])}
+            )
+            self.assertEqual(locations[1].shape, (1, 4))
+            self.assertEqual(locations[1].tolist(), [[0, 4, 5, 6]])
+            target = FakeLoader().generate_train_batch()["target"]
+            self.assertEqual(target.flatten().tolist(), [0, 1, 2])
+            probabilities = np.asarray(
+                [[[[1, 0, 0]]], [[[0, 1, 0]]], [[[0, 0, 1]]]], dtype=np.float32
+            )
+            segmentation = FakeLabelManager().convert_probabilities_to_segmentation(probabilities)
+            self.assertEqual(segmentation.flatten().tolist(), [0, 2, 5])
+            self.assertIn("foreground coordinates (z,y,x) -> (class,z,y,x)", installed)
+        finally:
+            for name, module in previous.items():
+                if module is None:
+                    sys.modules.pop(name, None)
+                else:
+                    sys.modules[name] = module
 
 
 if __name__ == "__main__":
