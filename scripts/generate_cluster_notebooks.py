@@ -357,9 +357,13 @@ write(
                 command.append("--c")
             else:
                 command.extend(["-pretrained_weights", str(CHECKPOINT)])
+            training_env = os.environ.copy()
+            training_env["PYTHONPATH"] = os.pathsep.join(
+                value for value in (str(REPO_ROOT / "src"), training_env.get("PYTHONPATH")) if value
+            )
             print(" ".join(command))
             if RUN_TRAINING:
-                subprocess.run(command, cwd=REPO_ROOT, check=True, env=os.environ.copy())
+                subprocess.run(command, cwd=REPO_ROOT, check=True, env=training_env)
             """
         ),
         md("## 6. Plot total, MAE and JEPA losses during or after training"),
