@@ -35,11 +35,11 @@ write(
     [
         md(
             """
-            # OpenMind 2000-volume preprocessing and Primus MAE+JEPA training
+            # OpenMind 20,000-volume preprocessing and Primus MAE+JEPA training
 
             This notebook is designed for the Isambard cluster. It performs four explicit stages:
 
-            1. deterministically select 2,000 real MRI acquisitions from `openneuro_metadata.csv`, including BIDS paths with and without `ses-*`;
+            1. deterministically select 20,000 real MRI acquisitions from `openneuro_metadata.csv`, including BIDS paths with and without `ses-*`;
             2. build an nnSSL `pretrain_data.json` and run the official fingerprint → plan → `onemmiso` preprocessing pipeline;
             3. visually and numerically verify raw versus preprocessed volumes;
             4. load the released PrimusM OpenMind MAE checkpoint and train the joint MAE+JEPA trainer for 200 epochs, then plot total/MAE/JEPA losses.
@@ -82,11 +82,11 @@ write(
                 "/lus/lfs1aip2/projects/u6mn/openmind_jepa/weights/PrimusM-OpenMind-MAE/checkpoint_final.pth",
             ))
 
-            DATASET_ID = 745
-            DATASET_NAME = "Dataset745_OpenMind2000"
+            DATASET_ID = 746
+            DATASET_NAME = "Dataset746_OpenMind20000"
             CONFIGURATION = "onemmiso"
             PLANS = "nnsslPlans"
-            N_IMAGES = 2000
+            N_IMAGES = 20_000
             SEED = 2026
             NUM_PROCESSES_FINGERPRINT = 12
             NUM_PROCESSES_PREPROCESS = 12
@@ -121,7 +121,7 @@ write(
             Selection is based on the official metadata table rather than assumptions about directory depth. Therefore both
             `ds000001/sub-01/anat/...` and `ds000017/sub-6/ses-timepoint1/anat/...` are handled correctly. Mask files are never
             selected as images because selection uses the metadata `image_path` column. Original acquisitions are preferred
-            over derived volumes, and datasets are sampled round-robin so one large OpenNeuro dataset cannot dominate the 2,000 images.
+            over derived volumes, and datasets are sampled round-robin so one large OpenNeuro dataset cannot dominate the 20,000 images.
             """
         ),
         code(
@@ -164,7 +164,7 @@ write(
             manifest = pd.DataFrame(selected_rows).drop(columns=["selection_key"], errors="ignore").reset_index(drop=True)
             assert len(manifest) == N_IMAGES, f"Only found {len(manifest)} readable images"
             assert manifest["unique_id"].is_unique
-            MANIFEST_CSV = WORK_ROOT / "openmind2000_manifest.csv"
+            MANIFEST_CSV = WORK_ROOT / "openmind20000_manifest.csv"
             manifest.to_csv(MANIFEST_CSV, index=False)
             print(f"Saved {len(manifest)} rows to {MANIFEST_CSV}")
             display(manifest[["unique_id", "modality", "dataset_id", "local_path"]].head())
@@ -224,11 +224,11 @@ write(
         ),
         md(
             """
-            ## 3. Fingerprint, plan and preprocess all 2,000 volumes
+            ## 3. Fingerprint, plan and preprocess all 20,000 volumes
 
             The output is compressed `.b2nd` data plus properties, stored separately from the raw BIDS tree. Set the flags to
             `False` after a successful run. The `valid_imgs.json` assertion is the completion marker; do not start 200-epoch
-            training unless it contains exactly 2,000 successful images.
+            training unless it contains exactly 20,000 successful images.
             """
         ),
         code(
@@ -316,7 +316,7 @@ write(
                     "std": float(processed.std()), "p01": float(pp_limits[0]), "p99": float(pp_limits[1]),
                 })
             plt.tight_layout()
-            QC_PNG = WORK_ROOT / "openmind2000_preprocessing_qc.png"
+            QC_PNG = WORK_ROOT / "openmind20000_preprocessing_qc.png"
             plt.savefig(QC_PNG, dpi=160, bbox_inches="tight")
             plt.show()
             qc_table = pd.DataFrame(qc_records)
@@ -333,8 +333,9 @@ write(
             synchronizes the EMA target encoder, and optimizes `L = L_MAE + 0.1 * L_JEPA`. It saves latest/best/final
             checkpoints and `jepa_loss_history.json`. Set `CONTINUE_TRAINING=True` to resume after a scheduler or wall-time stop.
 
-            nnSSL defines an epoch as 250 training iterations plus 50 validation iterations. Thus this 200-epoch run performs
-            50,000 optimizer steps while sampling from the full 2,000-volume pool; it is not 200 exhaustive passes over every file.
+            nnSSL defines an epoch as 250 training iterations plus 50 validation iterations. With batch size 8, this
+            200-epoch run performs 50,000 optimizer steps and draws 400,000 training patches from the full 20,000-volume
+            pool; it is not 200 exhaustive passes over every file.
             """
         ),
         code(
@@ -346,7 +347,7 @@ write(
             witness = torch.randn(8, 8, device="cuda")
             print("WITNESS", (witness @ witness).shape, torch.cuda.get_device_name(), torch.__version__)
 
-            TRAINER = "PrimusJEPATrainer_200ep_BS1"
+            TRAINER = "PrimusJEPATrainer_200ep_BS8"
             CONTINUE_TRAINING = False
             RUN_TRAINING = False  # Inspect paths and QC first, then change to True.
             command = [

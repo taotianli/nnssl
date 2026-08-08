@@ -179,3 +179,19 @@ class PrimusJEPATrainer_200ep_BS1(PrimusJEPATrainer_BS1):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.num_epochs = 200
+
+
+class PrimusJEPATrainer_BS8(PrimusJEPATrainer):
+    """Eight samples per optimizer step for high-memory accelerators."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.total_batch_size = 8
+
+
+class PrimusJEPATrainer_200ep_BS8(PrimusJEPATrainer_BS8):
+    """H200-oriented 200 epoch configuration."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.num_epochs = 200
