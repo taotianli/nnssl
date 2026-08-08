@@ -77,7 +77,10 @@ write(
             NNSSL_RAW = WORK_ROOT / "nnssl_raw"
             NNSSL_PREPROCESSED = WORK_ROOT / "nnssl_preprocessed"
             NNSSL_RESULTS = WORK_ROOT / "nnssl_results"
-            CHECKPOINT = Path(os.environ.get("PRIMUS_MAE_CHECKPOINT", REPO_ROOT / "weights/PrimusM-OpenMind-MAE/checkpoint_final.pth"))
+            CHECKPOINT = Path(os.environ.get(
+                "PRIMUS_MAE_CHECKPOINT",
+                "/lus/lfs1aip2/projects/u6mn/openmind_jepa/weights/PrimusM-OpenMind-MAE/checkpoint_final.pth",
+            ))
 
             DATASET_ID = 745
             DATASET_NAME = "Dataset745_OpenMind2000"
@@ -436,7 +439,7 @@ write(
             ))
             CHECKPOINT = Path(os.environ.get(
                 "PRIMUS_MAE_CHECKPOINT",
-                NNSSL_REPO / "weights/PrimusM-OpenMind-MAE/checkpoint_final.pth",
+                "/lus/lfs1aip2/projects/u6mn/openmind_jepa/weights/PrimusM-OpenMind-MAE/checkpoint_final.pth",
             ))
             TRAINER_NAME = os.environ.get("NNUNET_PRIMUS_TRAINER", "PMMAE1")
             SOURCE_PLAN = "PMPrep"
