@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from copy import deepcopy
 from time import perf_counter
 from typing import override
 
@@ -16,6 +17,7 @@ from nnssl.adaptation_planning.adaptation_plan import AdaptationPlan, Architectu
 from nnssl.architectures.primus_jepa import PrimusMAEJEPA
 from nnssl.training.loss.jepa_loss import JEPALatentLoss
 from nnssl.training.nnsslTrainer.masked_image_modeling.BaseEvaMAETrainer import BaseEvaMAETrainer
+from nnssl.utilities.json_export import recursive_fix_for_json_export
 from nnssl.utilities.helpers import dummy_context
 
 
@@ -156,8 +158,10 @@ class PrimusJEPATrainer(BaseEvaMAETrainer):
     def on_epoch_end(self):
         super().on_epoch_end()
         if self.local_rank == 0:
+            json_history = deepcopy(self.logger.my_fantastic_logging)
+            recursive_fix_for_json_export(json_history)
             save_json(
-                self.logger.my_fantastic_logging,
+                json_history,
                 join(self.output_folder, "jepa_loss_history.json"),
                 sort_keys=False,
             )
