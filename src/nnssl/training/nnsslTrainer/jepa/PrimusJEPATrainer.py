@@ -24,9 +24,11 @@ from nnssl.utilities.helpers import dummy_context
 class PrimusJEPATrainer(BaseEvaMAETrainer):
     """Joint Primus-M MAE + JEPA trainer using one shared online encoder."""
 
+    jepa_loss_weight_default = 0.1
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.jepa_loss_weight = 0.1
+        self.jepa_loss_weight = self.jepa_loss_weight_default
         self.mae_loss_weight = 1.0
         self.jepa_loss = JEPALatentLoss(exponent=1.0)
         self.predictor_dim = 384
@@ -195,3 +197,15 @@ class PrimusJEPATrainer_200ep_BS8(PrimusJEPATrainer_BS8):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.num_epochs = 200
+
+
+class PrimusJEPATrainer_200ep_BS8_JEPA0p01(PrimusJEPATrainer_200ep_BS8):
+    """H200 configuration with MAE + 0.01 * JEPA latent loss."""
+
+    jepa_loss_weight_default = 0.01
+
+
+class PrimusJEPATrainer_200ep_BS8_JEPA0p005(PrimusJEPATrainer_200ep_BS8):
+    """H200 configuration with MAE + 0.005 * JEPA latent loss."""
+
+    jepa_loss_weight_default = 0.005

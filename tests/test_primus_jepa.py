@@ -2,6 +2,12 @@ import torch
 
 from nnssl.architectures.primus_jepa import CrossAttention, PrimusMAEJEPA, complement_indices
 from nnssl.training.loss.jepa_loss import JEPALatentLoss
+from nnssl.training.nnsslTrainer.jepa.PrimusJEPATrainer import (
+    PrimusJEPATrainer,
+    PrimusJEPATrainer_200ep_BS8,
+    PrimusJEPATrainer_200ep_BS8_JEPA0p005,
+    PrimusJEPATrainer_200ep_BS8_JEPA0p01,
+)
 
 
 def _small_model() -> PrimusMAEJEPA:
@@ -67,3 +73,12 @@ def test_cross_attention_query_chunking_is_exact():
     query = torch.randn(2, 11, 24)
     context = torch.randn(2, 7, 24)
     assert torch.allclose(chunked(query, context), unchunked(query, context), atol=1e-6, rtol=1e-5)
+
+
+def test_h200_jepa_weight_variants_only_override_the_loss_weight():
+    assert PrimusJEPATrainer.jepa_loss_weight_default == 0.1
+    assert PrimusJEPATrainer_200ep_BS8.jepa_loss_weight_default == 0.1
+    assert PrimusJEPATrainer_200ep_BS8_JEPA0p01.jepa_loss_weight_default == 0.01
+    assert PrimusJEPATrainer_200ep_BS8_JEPA0p005.jepa_loss_weight_default == 0.005
+    assert issubclass(PrimusJEPATrainer_200ep_BS8_JEPA0p01, PrimusJEPATrainer_200ep_BS8)
+    assert issubclass(PrimusJEPATrainer_200ep_BS8_JEPA0p005, PrimusJEPATrainer_200ep_BS8)
