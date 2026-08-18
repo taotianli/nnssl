@@ -30,8 +30,8 @@ def load_pretrained_weights(network, fname, verbose=False):
         mod = mod._orig_mod
 
     # Extension protocol for networks that add new branches to an existing
-    # pretrained architecture. PrimusMAEJEPA uses this to load the released MAE
-    # weights, then initializes its EMA target from the loaded online encoder.
+    # pretrained architecture. Each network initializes any teacher/auxiliary
+    # branches it owns after loading the released MAE tensors.
     if hasattr(mod, "load_mae_state_dict"):
         loaded = mod.load_mae_state_dict(pretrained_dict)
         if not loaded:
@@ -39,7 +39,7 @@ def load_pretrained_weights(network, fname, verbose=False):
         print(
             "################### Loaded",
             len(loaded),
-            "MAE tensors and synchronized the JEPA target encoder from",
+            "MAE tensors and initialized the model's extension branches from",
             fname,
             "###################",
         )
