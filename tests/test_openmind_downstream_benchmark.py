@@ -38,6 +38,18 @@ class BenchmarkHelpersTest(unittest.TestCase):
             self.assertEqual(resolved, checkpoint.resolve())
             self.assertEqual(model, "PrimusM-OpenMind-MAE")
 
+    def test_adaptation_plan_is_found_above_fold_directory(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            run = Path(temporary) / "Trainer__Plans__Config"
+            checkpoint = run / "fold_all" / "checkpoint_final.pth"
+            checkpoint.parent.mkdir(parents=True)
+            checkpoint.touch()
+            plan = run / "adaptation_plan.json"
+            write_json(plan, {"architecture_plans": {"arch_class_name": "PrimusM"}})
+            architecture, resolved_plan = MODULE.adaptation_architecture(checkpoint)
+            self.assertEqual(architecture, "PrimusM")
+            self.assertEqual(resolved_plan, plan)
+
     def test_prepare_plan_is_non_destructive(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

@@ -66,6 +66,36 @@ the matched low-LR MAE-only continued-pretraining control.  A useful candidate
 must recover the public-MAE dense baseline within repeated-run uncertainty before
 semantic/classification benefits are considered.
 
+## Reusable downstream array
+
+The checkpoint manifest preserves the same zero-based indices as the pretraining
+sweep. To fine-tune and full-volume validate screening entries 0, 2, 4, 6, 8,
+and 9 on Dataset201, run:
+
+```bash
+sbatch --array=0,2,4,6,8-9%2 \
+  --export=ALL,DATASET_ID=201 \
+  scripts/slurm/openmind_downstream_checkpoint_array.slurm
+```
+
+This creates six array tasks and runs at most two concurrently. Each task uses
+one GPU. Completed jobs are skipped, interrupted fine-tuning resumes from
+`checkpoint_latest.pth`, and a completed fine-tune without a benchmark record
+runs validation only.
+
+For another downstream dataset, change only `DATASET_ID`. For another collection
+of checkpoints, create a tab-separated manifest with three columns—model label,
+absolute checkpoint path, and unique run name—and pass it at submission time:
+
+```bash
+sbatch --array=0-3%2 \
+  --export=ALL,DATASET_ID=203,MODEL_MANIFEST=/absolute/path/models.tsv \
+  scripts/slurm/openmind_downstream_checkpoint_array.slurm
+```
+
+Blank lines and `#` comments in a manifest are ignored. The array index is the
+zero-based order of the remaining rows.
+
 ## References
 
 - I-JEPA: <https://arxiv.org/abs/2301.08243>

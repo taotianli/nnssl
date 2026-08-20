@@ -125,12 +125,18 @@ def resolve_checkpoint(
 
 
 def adaptation_architecture(checkpoint: Path) -> tuple[str | None, Path | None]:
-    adaptation_path = checkpoint.parent / "adaptation_plan.json"
-    if not adaptation_path.is_file():
-        return None, None
-    adaptation = read_json(adaptation_path)
-    architecture = adaptation.get("architecture_plans", {}).get("arch_class_name")
-    return architecture, adaptation_path
+    # Released weights keep the plan beside the checkpoint. Native nnSSL runs
+    # keep checkpoints in fold_all/ and the shared plan one directory higher.
+    candidates = (
+        checkpoint.parent / "adaptation_plan.json",
+        checkpoint.parent.parent / "adaptation_plan.json",
+    )
+    for adaptation_path in candidates:
+        if adaptation_path.is_file():
+            adaptation = read_json(adaptation_path)
+            architecture = adaptation.get("architecture_plans", {}).get("arch_class_name")
+            return architecture, adaptation_path
+    return None, None
 
 
 def prepare_plan(
