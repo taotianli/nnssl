@@ -8,7 +8,9 @@
 #SBATCH --gres=gpu:1
 #SBATCH --time=24:00:00
 #SBATCH --partition=workq
-# Supply --array when submitting, so a screening subset is never expanded by accident.
+# Six selected models, six independent one-GPU tasks, with no concurrency cap.
+# A command-line --array overrides this default when reusing another manifest.
+#SBATCH --array=0,2,4,6,8-9
 
 set -euo pipefail
 
@@ -25,7 +27,7 @@ CONFIGURATION=${CONFIGURATION:-3d_fullres}
 FOLD=${FOLD:-0}
 
 if [[ -z "${SLURM_ARRAY_TASK_ID:-}" ]]; then
-    echo "ERROR: submit with --array=<indices>, for example --array=0,2,4,6,8-9%2" >&2
+    echo "ERROR: this script must run as a Slurm array job" >&2
     exit 2
 fi
 

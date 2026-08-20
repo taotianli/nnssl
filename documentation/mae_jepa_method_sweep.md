@@ -73,13 +73,14 @@ sweep. To fine-tune and full-volume validate screening entries 0, 2, 4, 6, 8,
 and 9 on Dataset201, run:
 
 ```bash
-sbatch --array=0,2,4,6,8-9%2 \
-  --export=ALL,DATASET_ID=201 \
+sbatch --export=ALL,DATASET_ID=201 \
   scripts/slurm/openmind_downstream_checkpoint_array.slurm
 ```
 
-This creates six array tasks and runs at most two concurrently. Each task uses
-one GPU. Completed jobs are skipped, interrupted fine-tuning resumes from
+The script's default array is `0,2,4,6,8-9`: it creates six tasks with no
+concurrency throttle, and each task requests one GPU. Slurm therefore receives
+a request for six GPUs in total, although individual tasks may wait until GPUs
+are available. Completed jobs are skipped, interrupted fine-tuning resumes from
 `checkpoint_latest.pth`, and a completed fine-tune without a benchmark record
 runs validation only.
 
@@ -88,10 +89,13 @@ of checkpoints, create a tab-separated manifest with three columns—model label
 absolute checkpoint path, and unique run name—and pass it at submission time:
 
 ```bash
-sbatch --array=0-3%2 \
+sbatch --array=0-3 \
   --export=ALL,DATASET_ID=203,MODEL_MANIFEST=/absolute/path/models.tsv \
   scripts/slurm/openmind_downstream_checkpoint_array.slurm
 ```
+
+With no `%N` suffix, selecting N manifest rows requests N one-GPU tasks. Add a
+suffix such as `%2` only when an explicit two-GPU concurrency cap is desired.
 
 Blank lines and `#` comments in a manifest are ignored. The array index is the
 zero-based order of the remaining rows.
