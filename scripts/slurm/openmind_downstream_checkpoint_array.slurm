@@ -8,9 +8,9 @@
 #SBATCH --gres=gpu:1
 #SBATCH --time=24:00:00
 #SBATCH --partition=workq
-# Six selected models, six independent one-GPU tasks, with no concurrency cap.
-# A command-line --array overrides this default when reusing another manifest.
-#SBATCH --array=0,2,4,6,8-9
+# Wave 2 has five models: five independent one-GPU tasks, no concurrency cap.
+# A command-line --array overrides this default when selecting another suite.
+#SBATCH --array=0-4
 
 set -euo pipefail
 
@@ -20,7 +20,24 @@ VENV=${VENV:-/home/u6mn/taotl.u6mn/vllm_tutorial/.venv}
 PREPROCESSED_ROOT=${PREPROCESSED_ROOT:-/lus/lfs1aip2/projects/u6mn/datasets/OpenMind_downstream/segmentation_preprocessed}
 RESULTS_ROOT=${RESULTS_ROOT:-/lus/lfs1aip2/projects/u6mn/openmind_jepa/downstream_benchmark}
 WEIGHTS_ROOT=${WEIGHTS_ROOT:-/lus/lfs1aip2/projects/u6mn/openmind_jepa/weights}
-MODEL_MANIFEST=${MODEL_MANIFEST:-${REPO}/scripts/configs/openmind_mae_jepa_method_sweep_checkpoints.tsv}
+MODEL_SUITE=${MODEL_SUITE:-}
+if [[ -z "${MODEL_MANIFEST:-}" ]]; then
+    MODEL_SUITE=${MODEL_SUITE:-wave2}
+    case "${MODEL_SUITE}" in
+        wave1)
+            MODEL_MANIFEST=${REPO}/scripts/configs/openmind_mae_jepa_method_sweep_checkpoints.tsv
+            ;;
+        wave2)
+            MODEL_MANIFEST=${REPO}/scripts/configs/openmind_mae_jepa_second_wave_checkpoints.tsv
+            ;;
+        *)
+            echo "ERROR: unknown MODEL_SUITE=${MODEL_SUITE}; use wave1, wave2, or set MODEL_MANIFEST" >&2
+            exit 2
+            ;;
+    esac
+else
+    MODEL_SUITE=${MODEL_SUITE:-custom}
+fi
 DATASET_ID=${DATASET_ID:-201}
 TRAINER=${TRAINER:-PretrainedTrainer_Primus_150ep}
 CONFIGURATION=${CONFIGURATION:-3d_fullres}
@@ -71,6 +88,7 @@ OUTPUT_DIR="${RESULTS_ROOT}/${DATASET_NAME}/${TRAINER}__${RUN_NAME}__${CONFIGURA
 RECORD="${OUTPUT_DIR}/benchmark_run.json"
 FINAL_CHECKPOINT="${OUTPUT_DIR}/checkpoint_final.pth"
 LATEST_CHECKPOINT="${OUTPUT_DIR}/checkpoint_latest.pth"
+BEST_CHECKPOINT="${OUTPUT_DIR}/checkpoint_best.pth"
 
 export PYTHONUNBUFFERED=1
 export PYTHONPATH="${REPO}/src:${PYTHONPATH:-}"
@@ -97,6 +115,8 @@ echo "Array/task:    ${SLURM_ARRAY_JOB_ID}/${SLURM_ARRAY_TASK_ID}"
 echo "Node:          $(hostname)"
 echo "GPU:           $(nvidia-smi --query-gpu=name,memory.total --format=csv,noheader)"
 echo "Dataset:       ${DATASET_NAME}"
+echo "Model suite:   ${MODEL_SUITE}"
+echo "Manifest:      ${MODEL_MANIFEST}"
 echo "Model label:   ${MODEL_LABEL}"
 echo "Checkpoint:    ${CHECKPOINT}"
 echo "Run name:      ${RUN_NAME}"
@@ -112,8 +132,8 @@ EXTRA_ARGS=()
 if [[ -f "${FINAL_CHECKPOINT}" ]]; then
     echo "Fine-tuning is complete; running/resuming full-volume validation."
     EXTRA_ARGS+=(--validation-only)
-elif [[ -f "${LATEST_CHECKPOINT}" ]]; then
-    echo "Found checkpoint_latest.pth; resuming fine-tuning."
+elif [[ -f "${LATEST_CHECKPOINT}" || -f "${BEST_CHECKPOINT}" ]]; then
+    echo "Found an intermediate checkpoint; resuming fine-tuning."
     EXTRA_ARGS+=(--continue)
 fi
 

@@ -73,16 +73,18 @@ sweep. To fine-tune and full-volume validate screening entries 0, 2, 4, 6, 8,
 and 9 on Dataset201, run:
 
 ```bash
-sbatch --export=ALL,DATASET_ID=201 \
+sbatch --array=0,2,4,6,8-9 \
+  --export=ALL,MODEL_SUITE=wave1,DATASET_ID=201 \
   scripts/slurm/openmind_downstream_checkpoint_array.slurm
 ```
 
-The script's default array is `0,2,4,6,8-9`: it creates six tasks with no
-concurrency throttle, and each task requests one GPU. Slurm therefore receives
-a request for six GPUs in total, although individual tasks may wait until GPUs
-are available. Completed jobs are skipped, interrupted fine-tuning resumes from
-`checkpoint_latest.pth`, and a completed fine-tune without a benchmark record
-runs validation only.
+The explicit Wave 1 array creates six tasks with no concurrency throttle, and
+each task requests one GPU. Slurm therefore receives a request for six GPUs in
+total, although individual tasks may wait until GPUs are available. The shared
+script now defaults to the five Wave 2 models, so Wave 1 calls should retain the
+`MODEL_SUITE=wave1` and `--array=0,2,4,6,8-9` overrides shown above. Completed
+jobs are skipped, interrupted fine-tuning resumes from `checkpoint_latest.pth`,
+and a completed fine-tune without a benchmark record runs validation only.
 
 For another downstream dataset, change only `DATASET_ID`. For another collection
 of checkpoints, create a tab-separated manifest with three columns—model label,

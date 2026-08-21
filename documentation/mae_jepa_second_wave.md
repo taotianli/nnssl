@@ -42,6 +42,26 @@ automatically resumes with `--c`; a new output loads the public MAE checkpoint.
 The corresponding downstream checkpoint manifest is
 `scripts/configs/openmind_mae_jepa_second_wave_checkpoints.tsv`.
 
+After all five pretraining checkpoints exist, fine-tune and full-volume
+validate them on Dataset201 with:
+
+```bash
+sbatch --export=ALL,MODEL_SUITE=wave2,DATASET_ID=201 \
+  scripts/slurm/openmind_downstream_checkpoint_array.slurm
+```
+
+The downstream script now defaults to Wave 2 and array `0-4`. It therefore
+requests five independent one-GPU jobs with no concurrency throttle. Existing
+completed records are skipped, interrupted fine-tuning resumes, and a finished
+fine-tune without `benchmark_run.json` runs validation only. To reuse the same
+script for the earlier screening set, override both the suite and indices:
+
+```bash
+sbatch --array=0,2,4,6,8-9 \
+  --export=ALL,MODEL_SUITE=wave1,DATASET_ID=201 \
+  scripts/slurm/openmind_downstream_checkpoint_array.slurm
+```
+
 ## Paper lineage and scope
 
 - Serial latent coupling is adapted from [Context Autoencoder](https://arxiv.org/abs/2202.03026), not a line-by-line CAE reproduction.
