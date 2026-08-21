@@ -1,0 +1,8 @@
+# id	key	trainer	description
+0	vic	PrimusJEPANoEMA_200ep_BS4_VICReg0p01	VICReg reference
+1	sig	PrimusJEPANoEMA_200ep_BS4_SIGReg0p02	SIGReg
+2	vis	PrimusJEPANoEMA_200ep_BS4_VISReg0p01	Token VISReg
+3	region_vis	PrimusJEPANoEMA_200ep_BS4_RegionVIS0p01	Region VISReg
+4	orr_b1	PrimusJEPANoEMA_200ep_BS4_ORR0p01_B1	ORR beta 1.0
+5	orr_b0p5	PrimusJEPANoEMA_200ep_BS4_ORR0p01_B0p5	ORR beta 0.5
+6	orr_shuffled	PrimusJEPANoEMA_200ep_BS4_ORRShuffled0p01_B1	Shuffled ORR beta 1.0

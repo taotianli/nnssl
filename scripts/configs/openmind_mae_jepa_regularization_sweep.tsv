@@ -1,0 +1,16 @@
+# id	block	trainer	calibration_key	rho_multiplier	description
+0	A	PrimusJEPANoEMA_200ep_BS4_NoReg	-	0	NoEMA BS4 causal control
+1	A	PrimusJEPANoEMA_200ep_BS4_VICReg0p005	vic	0.5	VICReg half reference budget
+2	A	PrimusJEPANoEMA_200ep_BS4_VICRegRho1	vic	1	Fresh matched VICReg reference budget
+3	A	PrimusJEPANoEMA_200ep_BS4_VICReg0p02	vic	2	VICReg double reference budget
+4	A	PrimusJEPANoEMA_200ep_BS4_SIGReg0p01	sig	0.5	SIGReg half reference budget
+5	A	PrimusJEPANoEMA_200ep_BS4_SIGRegRho1	sig	1	Fresh matched SIGReg reference budget
+6	A	PrimusJEPANoEMA_200ep_BS4_SIGReg0p05	sig	2	SIGReg double reference budget
+7	B	PrimusJEPANoEMA_200ep_BS4_VISReg0p005	vis	0.5	Token VISReg half reference budget
+8	B	PrimusJEPANoEMA_200ep_BS4_VISReg0p01	vis	1	Token VISReg reference budget
+9	B	PrimusJEPANoEMA_200ep_BS4_VISReg0p02	vis	2	Token VISReg double reference budget
+10	B	PrimusJEPANoEMA_200ep_BS4_RegionVIS0p01	region_vis	1	Balanced region VISReg
+11	B	PrimusJEPANoEMA_200ep_BS4_ORR0p005_B1	orr_b1	0.5	ORR beta 1 half reference budget
+12	B	PrimusJEPANoEMA_200ep_BS4_ORR0p01_B1	orr_b1	1	ORR beta 1 reference budget
+13	B	PrimusJEPANoEMA_200ep_BS4_ORR0p01_B0p5	orr_b0p5	1	ORR beta 0.5 reference budget
+14	B	PrimusJEPANoEMA_200ep_BS4_ORRShuffled0p01_B1	orr_shuffled	1	ORR shuffled-region control

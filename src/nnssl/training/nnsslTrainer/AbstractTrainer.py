@@ -755,9 +755,9 @@ class AbstractBaseTrainer(ABC):
         old_stdout = sys.stdout
         with open(os.devnull, "w") as f:
             sys.stdout = f
-            if self.dataloader_train is not None:
+            if self.dataloader_train is not None and hasattr(self.dataloader_train, "_finish"):
                 self.dataloader_train._finish()
-            if self.dataloader_val is not None:
+            if self.dataloader_val is not None and hasattr(self.dataloader_val, "_finish"):
                 self.dataloader_val._finish()
             sys.stdout = old_stdout
 
