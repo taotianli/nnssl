@@ -10,6 +10,8 @@
 #SBATCH --partition=workq
 # Wave 2 has five models: five independent one-GPU tasks, no concurrency cap.
 # A command-line --array overrides this default when selecting another suite.
+# For Wave 1 models 1,3,5,7 with a two-GPU concurrency cap, use
+# openmind_downstream_wave1_remaining.slurm.
 #SBATCH --array=0-4
 
 set -euo pipefail

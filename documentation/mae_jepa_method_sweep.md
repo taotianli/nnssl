@@ -86,6 +86,33 @@ script now defaults to the five Wave 2 models, so Wave 1 calls should retain the
 jobs are skipped, interrupted fine-tuning resumes from `checkpoint_latest.pth`,
 and a completed fine-tune without a benchmark record runs validation only.
 
+To evaluate the four remaining Wave 1 parameter settings (indices `1,3,5,7`)
+on Dataset201, run:
+
+```bash
+sbatch scripts/slurm/openmind_downstream_wave1_remaining.slurm
+```
+
+This submits four independent single-GPU array elements and `%2` limits the
+number running concurrently to two. The selected models are staged JEPA with
+lambda `0.01`, adaptive JEPA with ratio `0.10`, block JEPA with `K=1024`, and
+dual-teacher JEPA with alpha `0.50` to `0.90`. The wrapper reuses the generic
+checkpoint/resume/full-volume validation implementation. To evaluate the same
+selection on another prepared dataset, for example Dataset203, use:
+
+```bash
+sbatch --export=ALL,DATASET_ID=203 \
+  scripts/slurm/openmind_downstream_wave1_remaining.slurm
+```
+
+The equivalent direct invocation is:
+
+```bash
+sbatch --array=1,3,5,7%2 \
+  --export=ALL,MODEL_SUITE=wave1,DATASET_ID=201 \
+  scripts/slurm/openmind_downstream_checkpoint_array.slurm
+```
+
 For another downstream dataset, change only `DATASET_ID`. For another collection
 of checkpoints, create a tab-separated manifest with three columns—model label,
 absolute checkpoint path, and unique run name—and pass it at submission time:
