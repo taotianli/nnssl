@@ -1,0 +1,7 @@
+# id	trainer	description
+0	PrimusJEPAMoE_200ep_BS4_NoReg	Residual MoE causal control without representation regularization
+1	PrimusJEPAMoE_200ep_BS4_VICReg0p01	Residual MoE plus VICReg 0.01
+2	PrimusJEPAMoE_200ep_BS4_SIGReg0p02	Residual MoE plus SIGReg 0.02
+3	PrimusJEPAMoE_200ep_BS4_VICReg0p01_RC0p01	Residual MoE plus VICReg and routing consistency 0.01
+4	PrimusJEPAMoE_200ep_BS4_VICReg0p01_RC0p05	Residual MoE plus VICReg and routing consistency 0.05
+5	PrimusJEPAMoE16_200ep_BS4_VICReg0p01_RC0p01	Sixteen-expert capacity ablation with top-4 routing

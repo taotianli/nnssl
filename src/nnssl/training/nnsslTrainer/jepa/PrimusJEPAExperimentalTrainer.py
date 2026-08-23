@@ -71,6 +71,7 @@ class PrimusJEPAStabilizedTrainer(PrimusJEPATrainer):
     adaptive_contribution_ratio: float | None = None
     extra_loss_weight = 0.0
     regularizer_kind: str | None = None
+    auxiliary_prefixes_extra: tuple[str, ...] = ()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -138,7 +139,11 @@ class PrimusJEPAStabilizedTrainer(PrimusJEPATrainer):
         if getattr(self, "optimizer", None) is not None and self.training_stage is not None:
             return self.optimizer, self.lr_scheduler
         network = self._actual_network()
-        auxiliary_prefixes = ("predictor.", "regularizer_projector.")
+        auxiliary_prefixes = (
+            "predictor.",
+            "regularizer_projector.",
+            *self.auxiliary_prefixes_extra,
+        )
         auxiliary = []
         backbone = []
         for name, parameter in network.named_parameters():
@@ -178,10 +183,15 @@ class PrimusJEPAStabilizedTrainer(PrimusJEPATrainer):
 
     def _set_predictor_only(self, enabled: bool) -> None:
         network = self._actual_network()
+        auxiliary_prefixes = (
+            "predictor.",
+            "regularizer_projector.",
+            *self.auxiliary_prefixes_extra,
+        )
         for name, parameter in network.named_parameters():
             if name.startswith(("target_", "anchor_")):
                 parameter.requires_grad_(False)
-            elif name.startswith(("predictor.", "regularizer_projector.")):
+            elif name.startswith(auxiliary_prefixes):
                 parameter.requires_grad_(True)
             else:
                 parameter.requires_grad_(not enabled)
