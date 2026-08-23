@@ -31,6 +31,28 @@ the historical raw `.01/.02` checkpoints equal `rho_ref`:
 sbatch --array=0-6 scripts/slurm/openmind_pretrain_mae_jepa_regularization_sweep.slurm
 ```
 
+### Downstream screening from the interrupted 24-hour checkpoints
+
+If the first 24-hour Block A jobs stop near epoch 100, their latest checkpoints
+can be screened on Dataset201 before the 200-epoch continuation finishes:
+
+```bash
+sbatch scripts/slurm/openmind_downstream_block_a_latest.slurm
+```
+
+The seven array elements each request one GPU. Use `--array=0-6%2` to limit
+execution to two GPUs at a time. On first use, every task atomically freezes its
+mutable `checkpoint_latest.pth` as `checkpoint_24h_snapshot.pth`; later
+pretraining continuation therefore cannot change the checkpoint associated
+with the downstream result. Existing snapshots are deliberately reused on
+resubmission so interrupted downstream fine-tuning remains reproducible.
+
+The result run names contain `BlockA`, `24hLatest`, and the checkpoint's saved
+`current_epoch` (for example `_E98`), and are separate from future 200-epoch
+runs. These results compare the Block A methods at roughly 100 epochs. They
+must not be reported as compute-matched comparisons against the 200-epoch Wave
+1/Wave 2 checkpoints.
+
 After checking the NoEMA/no-regularizer control, run Block B (eight one-GPU jobs):
 
 ```bash

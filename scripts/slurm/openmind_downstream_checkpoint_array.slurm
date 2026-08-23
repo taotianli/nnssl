@@ -74,6 +74,13 @@ if [[ -z "${MODEL_LABEL}" || -z "${CHECKPOINT}" || -z "${RUN_NAME}" || -n "${EXT
     echo "ERROR: manifest row ${TASK_ID} must contain exactly three tab-separated fields" >&2
     exit 2
 fi
+if [[ -n "${RUN_NAME_SUFFIX:-}" ]]; then
+    if [[ ! "${RUN_NAME_SUFFIX}" =~ ^[A-Za-z0-9_.-]+$ ]]; then
+        echo "ERROR: RUN_NAME_SUFFIX contains unsafe characters: ${RUN_NAME_SUFFIX}" >&2
+        exit 2
+    fi
+    RUN_NAME="${RUN_NAME}${RUN_NAME_SUFFIX}"
+fi
 if [[ ! -f "${CHECKPOINT}" ]]; then
     echo "ERROR: checkpoint for ${MODEL_LABEL} is not ready: ${CHECKPOINT}" >&2
     exit 2
