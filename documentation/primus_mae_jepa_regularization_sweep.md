@@ -53,6 +53,16 @@ runs. These results compare the Block A methods at roughly 100 epochs. They
 must not be reported as compute-matched comparisons against the 200-epoch Wave
 1/Wave 2 checkpoints.
 
+The equivalent early screening for Block B experiment IDs 7-14 is:
+
+```bash
+sbatch scripts/slurm/openmind_downstream_block_b_latest.slurm
+```
+
+Its downstream array uses indices 0-7, which map in order to pretraining IDs
+7-14. It applies the same immutable 24-hour snapshot and epoch-suffixed run-name
+rules as Block A.
+
 After checking the NoEMA/no-regularizer control, run Block B (eight one-GPU jobs):
 
 ```bash
@@ -69,11 +79,14 @@ interpreting regularizer gains.
 
 All array tasks default to `EXPERIMENT_SEED=20260821`, which seeds Python,
 NumPy, torch, projector initialization, patch dropping, and region sampling.
-Calibration and the matched first screen default to the deterministic
-single-thread augmenter (`NNUNET_N_PROC_DA=0`). Override it only when accepting
-non-bit-matched augmentation streams for higher throughput. Regularizer random
-projections and region offsets use isolated RNG streams and do not advance the
-model's patch-drop/DropPath stream.
+Calibration keeps the deterministic single-thread augmenter. Full pretraining
+now defaults to 20 augmentation processes (`NNUNET_N_PROC_DA=20`) so the H200
+is not starved by 3-D CPU augmentation. Multi-process augmentation does not
+guarantee bit-identical batch streams across separate jobs, so comparisons are
+seed-matched but not bit-exact. Set `NNUNET_N_PROC_DA=0` explicitly only for a
+small deterministic diagnostic. Regularizer random projections and region
+offsets use isolated RNG streams and do not advance the model's
+patch-drop/DropPath stream.
 The framework resumes model/optimizer/logger state with `--c`, but its existing
 data-loader checkpoint format does not preserve an exact worker/augmentation
 cursor; resumed runs are optimization-equivalent rather than bit-exact.
