@@ -1,0 +1,4 @@
+# id	trainer	description
+0	PrimusJEPAHOPB8_200ep_BS4	HOP: reconstruction at encoder block 8
+1	PrimusJEPAELCVIC0p01_200ep_BS4	ELC: aligned 3D local invariance-variance-covariance weight 0.01
+2	PrimusJEPADOAR32_200ep_BS4	DOA: rank-32 objective-specific residual adapters
