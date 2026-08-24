@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import os
+import pickle
 from pathlib import Path
 import shutil
 import signal
@@ -20,6 +21,25 @@ from nnssl.training.nnsslTrainer.AbstractTrainer import AbstractBaseTrainer
 from nnssl.utilities.dataset_name_id_conversion import maybe_convert_to_dataset_name
 from nnssl.utilities.find_class_by_name import recursive_find_python_class
 from torch.backends import cudnn
+
+
+def _is_checkpoint_deserialization_error(error: BaseException) -> bool:
+    """Identify truncated/corrupt checkpoint reads without hiding state errors."""
+    if isinstance(error, (EOFError, pickle.UnpicklingError)):
+        return True
+    if not isinstance(error, RuntimeError):
+        return False
+    message = str(error).lower()
+    return any(
+        marker in message
+        for marker in (
+            "pytorchstreamreader",
+            "failed finding central directory",
+            "failed reading zip archive",
+            "unexpected end of file",
+            "pickle data was truncated",
+        )
+    )
 
 
 def find_free_network_port() -> int:
@@ -100,25 +120,41 @@ def maybe_load_checkpoint(
 
     if continue_training:
         logger.info("Attempting to continue training...")
-        expected_checkpoint_file = join(nnunet_trainer.output_folder, "checkpoint_final.pth")
-        if not isfile(expected_checkpoint_file):
-            expected_checkpoint_file = join(nnunet_trainer.output_folder, "checkpoint_latest.pth")
-        # special case where --c is used to run a previously aborted validation
-        if not isfile(expected_checkpoint_file):
-            expected_checkpoint_file = join(nnunet_trainer.output_folder, "checkpoint_best.pth")
-        # if not isfile(expected_checkpoint_file):
-        #     print(
-        #         f"WARNING: Cannot continue training because there seems to be no checkpoint available to "
-        #         f"continue from. Starting a new training..."
-        #     )
-        # raise RuntimeError(
-        #     f"Cannot continue training because there seems to be no checkpoint available to continue from. Starting a new training..."
-        # )
-        if isfile(expected_checkpoint_file):
-            logger.info(f"Using {expected_checkpoint_file} as the starting checkpoint for training...")
-        else:
-            expected_checkpoint_file = None
-            logger.info(f"No starting checkpoint available, starting a new training...")
+        candidates = [
+            join(nnunet_trainer.output_folder, filename)
+            for filename in (
+                "checkpoint_final.pth",
+                "checkpoint_latest.pth",
+                "checkpoint_best.pth",
+            )
+        ]
+        candidates = [filename for filename in candidates if isfile(filename)]
+        if not candidates:
+            raise RuntimeError(
+                "--c was requested but no final, latest, or best checkpoint exists in "
+                f"{nnunet_trainer.output_folder}. Refusing to start a random run in an "
+                "existing output directory."
+            )
+        load_errors = []
+        for expected_checkpoint_file in candidates:
+            logger.info(f"Trying {expected_checkpoint_file} as the starting checkpoint...")
+            try:
+                nnunet_trainer.load_checkpoint(expected_checkpoint_file)
+                logger.info(f"Successfully loaded {expected_checkpoint_file}")
+                return
+            except (EOFError, pickle.UnpicklingError, RuntimeError) as error:
+                if not _is_checkpoint_deserialization_error(error):
+                    raise
+                # Preserve the file for diagnosis and try the next checkpoint.
+                load_errors.append(f"{expected_checkpoint_file}: {error!r}")
+                logger.warning(
+                    "Checkpoint cannot be deserialized; trying the next candidate: "
+                    f"{expected_checkpoint_file}"
+                )
+        raise RuntimeError(
+            "All available continuation checkpoints were truncated. Refusing to "
+            "continue from random initialization.\n" + "\n".join(load_errors)
+        )
     elif validation_only:
         expected_checkpoint_file = join(nnunet_trainer.output_folder, "checkpoint_final.pth")
         if not isfile(expected_checkpoint_file):
@@ -131,10 +167,7 @@ def maybe_load_checkpoint(
         expected_checkpoint_file = None
 
     if expected_checkpoint_file is not None:
-        try:
-            nnunet_trainer.load_checkpoint(expected_checkpoint_file)
-        except EOFError:
-            os.remove(expected_checkpoint_file)
+        nnunet_trainer.load_checkpoint(expected_checkpoint_file)
 
 
 def setup_ddp(rank, world_size):

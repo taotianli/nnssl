@@ -1,0 +1,6 @@
+# id	trainer	description
+0	PrimusJEPASCLBParallel_200ep_BS4	Region-level JEPA plus VICReg without predictor-to-decoder bridge
+1	PrimusJEPASCLBDetached_200ep_BS4	Main connected-region SCLB with stop-gradient bridge
+2	PrimusJEPASCLBShuffled_200ep_BS4	Size-matched shuffled-region control with stop-gradient bridge
+3	PrimusJEPASCLBBidirectional_200ep_BS4	Connected-region bridge without stop-gradient
+4	PrimusJEPASCLBCrossView_200ep_BS4	Detached SCLB with aligned weak MRI intensity target view
