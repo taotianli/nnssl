@@ -65,6 +65,22 @@ requests one GPU. The script resumes from `checkpoint_latest.pth`,
 MAE checkpoint. Data augmentation uses 20 processes by default so a 24-hour run
 does not inherit the slow single-threaded regularizer-calibration setting.
 
+## Dataset201 downstream screen
+
+After all six pretraining runs have produced `checkpoint_final.pth`, launch the
+matched AMOS Dataset201 benchmark with:
+
+```bash
+sbatch --array=0-5 scripts/slurm/openmind_downstream_moe_201.slurm
+```
+
+This starts six independent one-GPU jobs. Add a concurrency cap such as
+`--array=0-5%2` if only two GPUs should run at once. The wrapper uses the shared
+downstream runner, so completed records are skipped and interrupted downstream
+fine-tuning resumes from its latest or best checkpoint. The standard PrimusM
+segmentation model loads `eva.base`; sparse experts and routing heads remain
+pretraining-only.
+
 Monitor both representation and router behavior. In addition to MAE, JEPA, and
 regularizer losses, logs contain routing consistency, routing entropy, and the
 minimum/maximum expert utilization relative to the layer mean. A model with a
