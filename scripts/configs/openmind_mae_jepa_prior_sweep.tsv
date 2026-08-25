@@ -1,0 +1,11 @@
+# id	trainer	description
+0	PrimusJEPAPriorAnatomyOcc_200ep_BS4_W0p02	P1a anatomy support occupancy; prior weight 0.02
+1	PrimusJEPAPriorAnatomySDF_200ep_BS4_W0p02	P1b anatomy occupancy plus signed-distance proxy; prior weight 0.02
+2	PrimusJEPAPriorHeat6_200ep_BS4_W0p001	P2a intensity-gated 6-neighbour heat-kernel prior; weight 0.001
+3	PrimusJEPAPriorHeat26_200ep_BS4_W0p001	P2b intensity-gated 26-neighbour heat-kernel prior; weight 0.001
+4	PrimusJEPAPriorSpectral8_200ep_BS4_W0p01	P3a eight-shell spectral reconstruction prior; weight 0.01
+5	PrimusJEPAPriorSpectral16_200ep_BS4_W0p01	P3b sixteen-shell spectral reconstruction prior; weight 0.01
+6	PrimusJEPAPriorAcquisitionWeak_200ep_BS4	P4a weak acquisition-style view; strength 0.05
+7	PrimusJEPAPriorAcquisitionMixed_200ep_BS4	P4b mixed acquisition-style view; strength 0.10
+8	PrimusJEPAPriorTissue3_200ep_BS4_W0p02	P5a soft three-bin pseudo-tissue prior; weight 0.02
+9	PrimusJEPAPriorCoarseRegion8_200ep_BS4_W0p02	P5b foreground-weighted 2x2x2 coarse-region prior; weight 0.02
