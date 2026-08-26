@@ -44,6 +44,12 @@ DATASET_ID=${DATASET_ID:-201}
 TRAINER=${TRAINER:-PretrainedTrainer_Primus_150ep}
 CONFIGURATION=${CONFIGURATION:-3d_fullres}
 FOLD=${FOLD:-0}
+DOWNSTREAM_EPOCHS=${DOWNSTREAM_EPOCHS:-150}
+
+if [[ ! "${DOWNSTREAM_EPOCHS}" =~ ^[1-9][0-9]*$ ]]; then
+    echo "ERROR: DOWNSTREAM_EPOCHS must be a positive integer, got ${DOWNSTREAM_EPOCHS}" >&2
+    exit 2
+fi
 
 if [[ -z "${SLURM_ARRAY_TASK_ID:-}" ]]; then
     echo "ERROR: this script must run as a Slurm array job" >&2
@@ -129,6 +135,7 @@ echo "Manifest:      ${MODEL_MANIFEST}"
 echo "Model label:   ${MODEL_LABEL}"
 echo "Checkpoint:    ${CHECKPOINT}"
 echo "Run name:      ${RUN_NAME}"
+echo "Epochs:        ${DOWNSTREAM_EPOCHS}"
 echo "Output:        ${OUTPUT_DIR}"
 echo "Started:       $(date --iso-8601=seconds)"
 
@@ -153,6 +160,7 @@ python scripts/openmind_downstream_benchmark.py \
     --fold "${FOLD}" \
     --run-name "${RUN_NAME}" \
     --trainer "${TRAINER}" \
+    --epochs "${DOWNSTREAM_EPOCHS}" \
     --configuration "${CONFIGURATION}" \
     --nnunet-repo "${NNUNET_REPO}" \
     --preprocessed-root "${PREPROCESSED_ROOT}" \
